@@ -4,6 +4,7 @@
 
 #pragma once
 
+#define WM_MYMSG WM_USER + 305
 #define WM_MYMSGKEY WM_USER + 306
 // CDrowScreenDlg ¶Ô»°¿ò
 class CDrowScreenDlg : public CDialogEx
@@ -34,7 +35,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedStartStop();
-	LRESULT OnMyKeyMsg(WPARAM wParam,LPARAM lParam);
+	LRESULT OnMyMouseMsg(WPARAM wParam,LPARAM lParam);
 public:
 	bool StartKeyHook();
 	bool StartMouseHook();
@@ -44,4 +45,5 @@ public:
 	void DelDLL();
 	afx_msg void OnBnClickedLoaddll();
 	afx_msg void OnBnClickedOk();
+	afx_msg void OnBnClickedClick();
 };

@@ -34,10 +34,11 @@ void CDrowScreenDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CDrowScreenDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_MESSAGE(WM_MYMSGKEY,OnMyKeyMsg)
+	ON_MESSAGE(WM_MYMSG,OnMyMouseMsg)
 	ON_BN_CLICKED(IDC_START_STOP, &CDrowScreenDlg::OnBnClickedStartStop)
 	ON_BN_CLICKED(IDC_LOADDLL, &CDrowScreenDlg::OnBnClickedLoaddll)
 	ON_BN_CLICKED(IDOK, &CDrowScreenDlg::OnBnClickedOk)
+	ON_BN_CLICKED(IDC_CLICK, &CDrowScreenDlg::OnBnClickedClick)
 END_MESSAGE_MAP()
 
 
@@ -99,55 +100,41 @@ void CDrowScreenDlg::OnBnClickedStartStop()
 {
 	if(m_bButtonStat == false)
 	{
-		if(StartKeyHook() == false)
+		if(StartMouseHook() == false)
 			return;
 		m_bButtonStat = true;
-		GetDlgItem(IDC_START_STOP)->SetWindowText(L"关闭键盘钩子");
+		GetDlgItem(IDC_START_STOP)->SetWindowText(L"关闭鼠标钩子");
 	}
 	else
 	{
-		if(StopKeyHook() == false)
+		if(StopMouseHook() == false)
 			return;
-		StopMouseHook();
 		m_bButtonStat = false;
-		GetDlgItem(IDC_START_STOP)->SetWindowText(L"启动键盘钩子");
+		GetDlgItem(IDC_START_STOP)->SetWindowText(L"启动鼠标钩子");
 	}
 	// TODO: 在此添加控件通知处理程序代码
 }
 
-LRESULT CDrowScreenDlg::OnMyKeyMsg(WPARAM wParam,LPARAM lParam)
+LRESULT CDrowScreenDlg::OnMyMouseMsg(WPARAM wParam,LPARAM lParam)
 {
-	bool lb =(bool)wParam;
-	if(lb == true)
-	{
-		StartMouseHook();
-	}
-	else
-	{
-		StopMouseHook();
-	}
-	return 1;
-}
+	
+	CPoint mpoint;
+	mpoint.x = LOWORD(lParam);
+	mpoint.y = HIWORD(lParam);
 
-bool CDrowScreenDlg::StartKeyHook()
-{
-	typedef BOOL (CALLBACK *StartHookKey)(HWND hWnd); 
-	StartHookKey StartHookK;
-	StartHookK=(StartHookKey)::GetProcAddress(g_hInstDll, "StartHookKey");
-	if(StartHookK == NULL)
-	{
-		AfxMessageBox(_T("func StartHookKey not found!"));
-		return false;
-	}
-	if (StartHookK(this->m_hWnd))
-	{
-	    GetDlgItem(IDC_TISHI)->SetWindowText(L"启动键盘钩子成功");
-	}
-	else
-	{
-		GetDlgItem(IDC_TISHI)->SetWindowText(L"启动键盘钩子失败");
-	}
-	return true;
+	CString x;
+	CString y;
+	
+	CEdit *editx = (CEdit *)GetDlgItem(IDC_MRX);
+	CEdit *edity = (CEdit *)GetDlgItem(IDC_MRY);
+	
+	x.Format(L"%d",mpoint.x);
+	y.Format(L"%d",mpoint.y);
+
+	editx->SetWindowTextW(x);
+	edity->SetWindowTextW(y);
+
+	return 1;
 }
 
 bool CDrowScreenDlg::StartMouseHook()
@@ -163,35 +150,14 @@ bool CDrowScreenDlg::StartMouseHook()
 	}
 	if (StartHook(this->m_hWnd))
 	{
-		GetDlgItem(IDC_TISHI)->SetWindowText(L"启动鼠标钩子成功");
 		return true;
 	}
 	else
 	{
-		GetDlgItem(IDC_TISHI)->SetWindowText(L"关闭鼠标钩子成功");
 		return false;
 	}
 }
 
-bool CDrowScreenDlg::StopKeyHook()
-{
-	typedef VOID (CALLBACK *StopHookKey)(); 
-	StopHookKey StopHook;
-
-	//g_hInstDll=LoadLibrary(_T("MouseHook.dll"));
-	StopHook=(StopHookKey)::GetProcAddress(g_hInstDll,"StopHookKey");
-	if(StopHook == NULL)
-	{
-		GetDlgItem(IDC_TISHI)->SetWindowText(L"停止键盘钩子失败");
-		return false;
-	}
-	else
-	{
-		StopHook();
-		GetDlgItem(IDC_TISHI)->SetWindowText(L"停止键盘钩子成功");
-		return true;
-	}
-}
 
 bool CDrowScreenDlg::StopMouseHook()
 {
@@ -200,13 +166,11 @@ bool CDrowScreenDlg::StopMouseHook()
 	StopHook=(StopHookMouse)::GetProcAddress(g_hInstDll,"StopHookMouse");
 	if(StopHook==NULL)
 	{
-		GetDlgItem(IDC_TISHI)->SetWindowText(L"停止鼠标钩子成功");
 		return false;
 	}
 	else
 	{
 		StopHook();
-		GetDlgItem(IDC_TISHI)->SetWindowText(L"停止鼠标钩子成功");
 		return true;
 	}
 
@@ -253,8 +217,32 @@ void CDrowScreenDlg::DelDLL()
 
 void CDrowScreenDlg::OnBnClickedOk()
 {
-	StopKeyHook();
+	StopMouseHook();
 	DelDLL();
 	// TODO: 在此添加控件通知处理程序代码
 	CDialogEx::OnOK();
+}
+
+
+void CDrowScreenDlg::OnBnClickedClick()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	CPoint pt;
+
+	GetCursorPos(&pt);//获取鼠标在屏幕的当前位置
+
+	CString x1;
+	CString y1;
+
+	CEdit *editx1 = (CEdit *)GetDlgItem(IDC_LDX);
+	CEdit *edity1 = (CEdit *)GetDlgItem(IDC_LDY);
+	
+	editx1->GetWindowTextW(x1);
+	edity1->GetWindowTextW(y1);
+
+
+	SetCursorPos(_ttoi(x1),_ttoi(y1));//移动到某点坐标
+
+	mouse_event(MOUSEEVENTF_LEFTDOWN,0,0,0,0);//点下左键
 }

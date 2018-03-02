@@ -9,11 +9,9 @@
 #endif
 
 #define WM_MYMSG WM_USER + 305 //自定义消息，用于和主程序通信
-#define WM_MYMSGKEY WM_USER + 306
 //将变量放在共享段,及所有线程共享以下变量;
 #pragma data_seg(".SHARED")
 static HHOOK  hhkMouse=NULL; //鼠标钩子句柄;
-static HHOOK  hhkKey=NULL;   //键盘句柄
 static HINSTANCE g_hInstDll=NULL; //本dll的实例句柄;
 static HWND g_hWnd=NULL;//调用dll的主窗口句柄
 static bool g_bDown = false;
@@ -95,47 +93,21 @@ LRESULT CALLBACK LowLevelMouseProc(
 	if (g_hWnd!=NULL&&nCode==HC_ACTION)
 	{
 		mouseHookStruct=(PMSLLHOOKSTRUCT)lParam;
-		if(wParam == WM_LBUTTONDOWN)
-		{
-			 g_isdrow = true;
-			 m_ptOld.x = mouseHookStruct->pt.x;
-			 m_ptOld.y = mouseHookStruct->pt.y;
-		}
-		if(wParam == WM_LBUTTONUP)
-		{
-			g_isdrow = false;
-		}
 		if(wParam == WM_MOUSEMOVE)
 		{
-			if(g_isdrow == true)
-			{
 				CPoint point;
 				point.x = mouseHookStruct->pt.x;
 				point.y = mouseHookStruct->pt.y;
-				CWindowDC dc(CWnd::FromHandle(GetDesktopWindow()));
-				dc.SetROP2(R2_MASKPEN);
-				CPen pen(PS_SOLID, 5, RGB(0,255,0)); 
-				CPen  *pOldPen=dc.SelectObject(&pen);
-				dc.MoveTo(m_ptOld); //移动到起始点 
-				dc.LineTo(point);   //画线到，注意这里的每一次画线都是很短的。很短的多次画线就得到了曲线
-				m_ptOld=point;
-			}
+				::SendMessage(g_hWnd,WM_MYMSG,wParam,MAKELPARAM(point.x,point.y));	
 		}
-		//::SendMessage(g_hWnd,WM_MYMSG,wParam,lParam);
-		if(wParam == WM_LBUTTONDOWN && g_bDown == true)
-		{
-			return true;
-		}
-		if(wParam == WM_MOUSEHOVER && g_bDown == true)
-		{
-			return true;
-		}
+		
+		
 		//WM_MOUSELEASE
 	}
 	return CallNextHookEx(hhkMouse,nCode,wParam,lParam);
 }
 
-//安装低级鼠标钩子，从而截获系统所有的鼠标消息
+/*安装低级鼠标钩子，从而截获系统所有的鼠标消息*/
 BOOL WINAPI StartHookMouse(HWND hWnd)
 {
 	g_hWnd=hWnd;
@@ -151,7 +123,7 @@ BOOL WINAPI StartHookMouse(HWND hWnd)
 	}
 }
 
-//卸载低级鼠标钩子
+/**卸载低级鼠标钩子**/
 VOID WINAPI StopHookMouse()
 {
 	if (hhkMouse!=NULL)
@@ -163,57 +135,4 @@ VOID WINAPI StopHookMouse()
 VOID WINAPI SetBDown(bool flag)
 {
 	 g_bDown = flag;
-}
-
-
-LRESULT CALLBACK LowLevelKeyProc(
-						   int nCode,      // hook code
-						   WPARAM wParam,  // message identifier
-						   LPARAM lParam   // mouse coordinates
-						   )
-{
-    KBDLLHOOKSTRUCT *pkh = (KBDLLHOOKSTRUCT *) lParam;
-	//有鼠标消息时，将其发给主程序
-	if (nCode >= HC_ACTION && wParam==WM_KEYDOWN)   
-	{   
-		BOOL bctrl = GetAsyncKeyState(VK_CONTROL)>>((sizeof(SHORT) *8)-1);  
-		if(pkh->vkCode==VK_ESCAPE && bctrl)// && bctrl)
-		{
-			 if( g_bDown == false)	
-			 {
-				 g_bDown = true;
-			 }
-		 	 else
-		 	 {
-			 	 g_bDown = false;
-			 }
-			 ::SendMessage(g_hWnd, WM_MYMSGKEY, g_bDown, 0);
-			 return true;
-		}  
-	} 
-	return CallNextHookEx(hhkKey,nCode,wParam,lParam);
-}
-
-BOOL WINAPI StartHookKey(HWND hWnd)
-{
-	g_hWnd=hWnd;
-	hhkKey=::SetWindowsHookEx(WH_KEYBOARD_LL,LowLevelKeyProc,g_hInstDll,0);
-	//hhkMouse=::SetWindowsHookEx(WH_KEYBOARD,LowLevelMouseProc,g_hInstDll,0);
-	if (hhkKey==NULL)
-	{
-		return FALSE;
-	} 
-	else
-	{  
-		return TRUE;
-	}
-}
-
-//卸载低级鼠标钩子
-VOID WINAPI StopHookKey()
-{
-	if (hhkKey!=NULL)
-	{
-		::UnhookWindowsHookEx(hhkKey);
-	}
 }

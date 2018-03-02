@@ -5,7 +5,5 @@ LIBRARY      "MouseHook"
 EXPORTS
 StartHookMouse
 StopHookMouse
-StartHookKey
-StopHookKey
 SetBDown
     ; 此处可以是显式导出
